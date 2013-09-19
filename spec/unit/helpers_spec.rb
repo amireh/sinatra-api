@@ -120,4 +120,9 @@ describe "Helpers" do
     last_response.status.should == 404
     last_response.body.should match /No such resource/
   end
+
+  it "should define a resource alias" do
+    Sinatra::API.alias_resource :item, :item_alias
+    Sinatra::API.aliases_for(:item).should == [ 'item_alias' ]
+  end
 end

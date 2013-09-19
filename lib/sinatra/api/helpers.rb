@@ -22,6 +22,10 @@
 module Sinatra
   # TODO: accept nested parameters
   module API
+    public
+
+    attr_accessor :resource_aliases
+
     ResourcePrefix = '::'
 
     module Helpers
@@ -195,6 +199,11 @@ module Sinatra
 
         instance_variable_set('@'+r, resource)
 
+        API.aliases_for(r).each { |resource_alias|
+          instance_variable_set('@'+resource_alias, resource)
+          puts "API: resource #{rklass} exported to @#{resource_alias}"
+        }
+
         resource
       end
 
@@ -224,6 +233,8 @@ module Sinatra
     end
 
     def self.registered(app)
+      @@api_resource_aliases ||= {}
+
       app.helpers Helpers
       app.before do
         @api = { required: {}, optional: {} }
@@ -253,6 +264,19 @@ module Sinatra
         end
       end
 
+    end
+
+    def self.alias_resource(original, resource_alias)
+      @@resource_aliases ||= {}
+      @@resource_aliases[original.to_sym] ||= []
+      @@resource_aliases[original.to_sym] << resource_alias.to_s
+
+      puts "API resource #{original} is now aliased as #{resource_alias}"
+    end
+
+    def self.aliases_for(resource)
+      @@resource_aliases ||= {}
+      @@resource_aliases[resource.to_sym] || []
     end
   end
 end
