@@ -22,6 +22,8 @@
 module Sinatra
   # TODO: accept nested parameters
   module API
+    ResourcePrefix = '::'
+
     module Helpers
       def api_call?
         (request.accept || '').to_s.include?('json') ||
@@ -165,10 +167,10 @@ module Sinatra
       def __api_locate_resource(r, container = nil)
 
         resource_id = params[r + '_id'].to_i
-        rklass      = r.capitalize
+        rklass      = r.camelize
 
         collection = case
-        when container.nil?;  eval "#{rklass}"
+        when container.nil?;  eval "#{ResourcePrefix}#{rklass}"
         else;                 container.send("#{r.to_plural}")
         end
 

@@ -23,7 +23,10 @@ $LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
 
 require 'json'
 require 'sinatra/base'
-require 'sinatra/api/ext/hash'
+require 'active_support/core_ext/hash'
+require 'active_support/core_ext/string'
+# require 'sinatra/api/ext/hash'
+# require 'sinatra/api/ext/string'
 require 'sinatra/api/version'
 require 'sinatra/api/helpers'
 
