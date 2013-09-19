@@ -1,0 +1,8 @@
+[transients]
+doc/*
+
+[env]
+.bundle
+.yardoc
+*.swp
+Gemfile.lock
