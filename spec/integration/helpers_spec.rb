@@ -1,36 +1,5 @@
-describe "Helpers" do
-  before :each do
-    Router.purge('/')
-  end
-
-  class ModelAdapter
-  end
-
-  class CollectionAdapter
-    def initialize(model)
-      @model = model
-    end
-
-    def self.get(key)
-      return @model.new
-    end
-  end
-
-  class Item
-    def self.get(id)
-      return {} if id == 1
-    end
-
-    def sub_items
-      CollectionAdapter.new(SubItem)
-    end
-  end
-
-  class SubItem < ModelAdapter
-    def item
-      Item.new
-    end
-  end
+describe Sinatra::API::Helpers do
+  include_examples 'integration specs'
 
   it "should reject a request missing a required parameter" do
     app.get '/' do
@@ -119,10 +88,5 @@ describe "Helpers" do
     get '/items/2'
     last_response.status.should == 404
     last_response.body.should match /No such resource/
-  end
-
-  it "should define a resource alias" do
-    Sinatra::API.alias_resource :item, :item_alias
-    Sinatra::API.aliases_for(:item).should == [ 'item_alias' ]
   end
 end

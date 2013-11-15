@@ -19,20 +19,25 @@
 # SOFTWARE.
 #
 
-$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
-
-require 'json'
-require 'sinatra/base'
-require 'active_support/core_ext/hash'
-require 'active_support/core_ext/string'
-# require 'sinatra/api/ext/hash'
-# require 'sinatra/api/ext/string'
-require 'sinatra/api/version'
-require 'sinatra/api'
-require 'sinatra/api/helpers'
-require 'sinatra/api/resource_aliases'
-require 'sinatra/api/callbacks'
-
 module Sinatra
-  register API
+  module API
+    module Callbacks
+      attr_accessor :api_callbacks
+
+      def self.extended(base)
+        base.api_callbacks = {}
+      end
+
+      def on(event, &callback)
+        (self.api_callbacks[event.to_sym] ||= []) << callback
+      end
+
+      def trigger(event, *args)
+        callbacks = self.api_callbacks[event.to_sym] || []
+        callbacks.each do |callback|
+          callback.call(*args)
+        end
+      end
+    end
+  end
 end

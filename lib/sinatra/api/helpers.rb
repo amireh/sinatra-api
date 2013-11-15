@@ -24,9 +24,7 @@ module Sinatra
   module API
     public
 
-    attr_accessor :resource_aliases
-
-    ResourcePrefix = '::'
+    # attr_accessor :resource_aliases
 
     module Helpers
       def api_call?
@@ -199,6 +197,8 @@ module Sinatra
 
         instance_variable_set('@'+r, resource)
 
+        API.trigger :resource_located, resource, r
+
         API.aliases_for(r).each { |resource_alias|
           instance_variable_set('@'+resource_alias, resource)
           puts "API: resource #{rklass} exported to @#{resource_alias}"
@@ -230,53 +230,6 @@ module Sinatra
           @api[type][name.to_sym] = h[name]
         end
       end
-    end
-
-    def self.registered(app)
-      @@api_resource_aliases ||= {}
-
-      app.helpers Helpers
-      app.before do
-        @api = { required: {}, optional: {} }
-        @parent_resource = nil
-
-        if api_call?
-          request.body.rewind
-          body = request.body.read.to_s || ''
-          unless body.empty?
-            begin;
-              params.merge!(::JSON.parse(body))
-              # puts params.inspect
-              # puts request.path
-            rescue ::JSON::ParserError => e
-              puts e.message
-              puts e.backtrace
-              halt 400, "Malformed JSON content"
-            end
-          end
-        end
-      end
-
-      app.set(:requires) do |*resources|
-        condition do
-          @required = resources.collect { |r| r.to_s }
-          @required.each { |r| @parent_resource = __api_locate_resource(r, @parent_resource) }
-        end
-      end
-
-    end
-
-    def self.alias_resource(original, resource_alias)
-      @@resource_aliases ||= {}
-      @@resource_aliases[original.to_sym] ||= []
-      @@resource_aliases[original.to_sym] << resource_alias.to_s
-
-      puts "API resource #{original} is now aliased as #{resource_alias}"
-    end
-
-    def self.aliases_for(resource)
-      @@resource_aliases ||= {}
-      @@resource_aliases[resource.to_sym] || []
     end
   end
 end

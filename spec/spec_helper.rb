@@ -37,4 +37,4 @@ RSpec.configure do |config|
   end
 end
 
-Dir["./spec/helpers/**/*.rb"].sort.each { |f| require f }
+Dir["./spec/{helpers,support}/**/*.rb"].sort.each { |f| require f }
