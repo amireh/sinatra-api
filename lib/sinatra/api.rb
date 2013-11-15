@@ -70,8 +70,7 @@ module Sinatra
       api = self
       self.logger = ActiveSupport::Logger.new(STDOUT)
 
-      ParameterValidator.register(api)
-      StringValidator.new
+      ParameterValidator.install(api)
 
       app.helpers Helpers, Parameters, Resources, ErrorHandler
       app.before do
