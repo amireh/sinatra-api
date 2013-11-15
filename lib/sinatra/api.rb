@@ -30,6 +30,8 @@ require 'sinatra/api/version'
 require 'sinatra/api/callbacks'
 require 'sinatra/api/helpers'
 require 'sinatra/api/resource_aliases'
+require 'sinatra/api/resources'
+require 'sinatra/api/parameters'
 
 module Sinatra
   module API
@@ -37,37 +39,48 @@ module Sinatra
     extend ResourceAliases
 
     class << self
+      # @!attribute logger
+      #   @return [ActiveSupport::Logger]
+      #   A Logger instance.
       attr_accessor :logger
+
+      # @!attribute instance
+      #   @return [Sinatra::Application]
+      #   The Sinatra instance that is evaluating the current request.
+      attr_accessor :instance
+
+      # Parse a JSON construct from a string stream.
+      #
+      # Override this to use a custom JSON parser, if necessary.
+      #
+      # @param [String] stream The raw JSON stream.
+      #
+      # @return [Hash] A Hash of the parsed JSON.
+      def parse_json(stream)
+        ::JSON.parse(stream)
+      end
     end
 
     ResourcePrefix = '::'
 
-    # Parse a JSON construct from a string stream.
-    #
-    # Override this to use a custom JSON parser, if necessary.
-    #
-    # @param [String] stream The raw JSON stream.
-    #
-    # @return [Hash] A Hash of the parsed JSON.
-    def parse_json(stream)
-      ::JSON.parse(stream)
-    end
-
     def self.registered(app)
+      base = self
       self.logger = ActiveSupport::Logger.new(STDOUT)
 
-      app.helpers Helpers
+      app.helpers Helpers, Parameters, Resources
       app.before do
+        base.instance = self
+
         @api = { required: {}, optional: {} }
         @parent_resource = nil
 
         if api_call?
           request.body.rewind
-          body = request.body.read.to_s || ''
+          raw_json = request.body.read.to_s || ''
 
-          unless body.empty?
+          unless raw_json.empty?
             begin
-              params.merge!(parse_json(body))
+              params.merge!(base.parse_json(raw_json))
             rescue ::JSON::ParserError => e
               logger.warn e.message
               logger.warn e.backtrace
@@ -82,7 +95,7 @@ module Sinatra
         condition do
           @required = resources.collect { |r| r.to_s }
           @required.each do |r|
-            @parent_resource = __api_locate_resource(r, @parent_resource)
+            @parent_resource = api_locate_resource(r, @parent_resource)
           end
         end
       end

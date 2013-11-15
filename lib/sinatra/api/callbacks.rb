@@ -22,18 +22,18 @@
 module Sinatra
   module API
     module Callbacks
-      attr_accessor :api_callbacks
+      attr_accessor :callbacks
 
       def self.extended(base)
-        base.api_callbacks = {}
+        base.callbacks = {}
       end
 
       def on(event, &callback)
-        (self.api_callbacks[event.to_sym] ||= []) << callback
+        (self.callbacks[event.to_sym] ||= []) << callback
       end
 
       def trigger(event, *args)
-        callbacks = self.api_callbacks[event.to_sym] || []
+        callbacks = self.callbacks[event.to_sym] || []
         callbacks.each do |callback|
           callback.call(*args)
         end

@@ -1,1 +1,1 @@
---protected -m markdown -r README.md
+--protected --private -m markdown -r README.md

@@ -5,11 +5,7 @@ module Sinatra
 
       def self.extended(base)
         base.resource_aliases = {}
-        base.on :resource_located do |resource, name|
-          base.aliases_for(name).each do |resource_alias|
-            instance_variable_set("@#{resource_alias}", resource)
-          end
-        end
+        base.on :resource_located, &method(:export_alias)
       end
 
       def alias_resource(original, resource_alias)
@@ -30,6 +26,15 @@ module Sinatra
 
       def reset_aliases!
         self.resource_aliases = {}
+      end
+
+      private
+
+      def self.export_alias(resource, name)
+        base = Sinatra::API
+        base.aliases_for(name).each do |resource_alias|
+          base.instance.instance_variable_set("@#{resource_alias}", resource)
+        end
       end
     end
   end
