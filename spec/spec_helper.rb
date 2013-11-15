@@ -2,8 +2,7 @@ $LOAD_PATH << File.join(File.dirname(__FILE__), '..')
 
 ENV['RACK_ENV'] = 'test'
 
-
-require 'lib/sinatra-api-helpers'
+require 'lib/sinatra/api'
 require 'rspec'
 require 'rack/test'
 
