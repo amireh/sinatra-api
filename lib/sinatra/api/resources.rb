@@ -24,6 +24,22 @@ module Sinatra::API
   # and optional validators.
   #
   module Resources
+
+    def self.included(app)
+      app.set(:requires) do |*resources|
+        condition do
+          @required = resources.collect { |r| r.to_s }
+          @required.each do |r|
+            @parent_resource = api_locate_resource(r, @parent_resource)
+          end
+        end
+      end
+
+      Sinatra::API.on :request do |instance|
+        @parent_resource = nil
+      end
+    end
+
     private
 
     # Attempt to locate a resource based on an ID supplied in a request parameter.

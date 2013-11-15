@@ -75,9 +75,7 @@ module Sinatra
       app.helpers Helpers, Parameters, Resources, ErrorHandler
       app.before do
         api.instance = self
-
-        @api = { required: {}, optional: {} }
-        @parent_resource = nil
+        api.trigger :request, self
 
         if api_call?
           request.body.rewind
@@ -92,15 +90,6 @@ module Sinatra
 
               halt 400, "Malformed JSON content"
             end
-          end
-        end
-      end
-
-      app.set(:requires) do |*resources|
-        condition do
-          @required = resources.collect { |r| r.to_s }
-          @required.each do |r|
-            @parent_resource = api_locate_resource(r, @parent_resource)
           end
         end
       end

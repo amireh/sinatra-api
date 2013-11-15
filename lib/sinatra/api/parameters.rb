@@ -135,11 +135,13 @@ module Sinatra::API
       end
     end
 
+    # Is the specified *optional* parameter supplied by the request?
     def api_has_param?(key)
       @api[:optional].has_key?(key)
     end
     alias_method :has_api_parameter?, :api_has_param?
 
+    # Get the value of the given API parameter, if any.
     def api_param(key)
       @api[:optional][key.to_sym] || @api[:required][key.to_sym]
     end
@@ -159,7 +161,6 @@ module Sinatra::API
     def api_clear!()
       @api = { required: {}, optional: {} }
     end
-
     alias_method :api_reset!, :api_clear!
 
     private
@@ -194,6 +195,12 @@ module Sinatra::API
       converted = {}
       args.each { |name| converted[name] = nil }
       converted
+    end
+
+    def self.included(app)
+      Sinatra::API.on :request do |request_scope|
+        request_scope.instance_eval &:api_reset!
+      end
     end
   end
 end
