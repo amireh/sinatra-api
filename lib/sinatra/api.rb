@@ -41,6 +41,14 @@ module Sinatra
     extend Callbacks
     extend ResourceAliases
 
+    class Config
+      attr_accessor :with_errors
+
+      Defaults = {
+        with_errors: true
+      }
+    end
+
     class << self
       # @!attribute logger
       #   @return [ActiveSupport::Logger]
@@ -62,6 +70,21 @@ module Sinatra
       def parse_json(stream)
         ::JSON.parse(stream)
       end
+
+      def configure(options = {}, &block)
+        self.config = Config.new
+        options = {}.merge(Config::Defaults).merge(options)
+
+        options.each_pair do |key, setting|
+          if config.respond_to?(key)
+            config[key] = setting
+          else
+            logger.warn "Unknown option #{key} => #{setting}"
+          end
+        end
+
+        yield(config) if block_given?
+      end
     end
 
     ResourcePrefix = '::'
@@ -72,7 +95,9 @@ module Sinatra
 
       ParameterValidator.install(api)
 
-      app.helpers Helpers, Parameters, Resources, ErrorHandler
+      app.helpers Helpers, Parameters, Resources
+      app.helpers ErrorHandler if config.with_errors
+
       app.before do
         api.instance = self
         api.trigger :request, self
