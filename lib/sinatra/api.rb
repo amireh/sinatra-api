@@ -27,6 +27,7 @@ require 'sinatra/base'
 require 'active_support/core_ext/hash'
 require 'active_support/core_ext/string'
 require 'sinatra/api/version'
+require 'sinatra/api/config'
 require 'sinatra/api/callbacks'
 require 'sinatra/api/helpers'
 require 'sinatra/api/error_handler'
@@ -41,14 +42,6 @@ module Sinatra
     extend Callbacks
     extend ResourceAliases
 
-    class Config
-      attr_accessor :with_errors
-
-      Defaults = {
-        with_errors: true
-      }
-    end
-
     class << self
       # @!attribute logger
       #   @return [ActiveSupport::Logger]
@@ -59,6 +52,16 @@ module Sinatra
       #   @return [Sinatra::Application]
       #   The Sinatra instance that is evaluating the current request.
       attr_accessor :instance
+
+      # @!attribute instance
+      #   @return [Sinatra::Base]
+      #   The Sinatra application.
+      attr_accessor :app
+
+      # @!attribute config
+      #   @return [Sinatra::API::Config]
+      #   Runtime configuration options.
+      attr_accessor :config
 
       # Parse a JSON construct from a string stream.
       #
@@ -71,19 +74,8 @@ module Sinatra
         ::JSON.parse(stream)
       end
 
-      def configure(options = {}, &block)
-        self.config = Config.new
-        options = {}.merge(Config::Defaults).merge(options)
-
-        options.each_pair do |key, setting|
-          if config.respond_to?(key)
-            config[key] = setting
-          else
-            logger.warn "Unknown option #{key} => #{setting}"
-          end
-        end
-
-        yield(config) if block_given?
+      def configure(options = {})
+        self.config = Config.new(options)
       end
     end
 
@@ -91,12 +83,18 @@ module Sinatra
 
     def self.registered(app)
       api = self
+      self.app = app
       self.logger = ActiveSupport::Logger.new(STDOUT)
 
-      ParameterValidator.install(api)
-
       app.helpers Helpers, Parameters, Resources
-      app.helpers ErrorHandler if config.with_errors
+
+      on :with_parameter_validations_setting do |setting|
+        ParameterValidator.install(Sinatra::API) if setting
+      end
+
+      on :with_errors_setting do |setting|
+        app.helpers ErrorHandler if setting
+      end
 
       app.before do
         api.instance = self

@@ -73,6 +73,7 @@ module Sinatra::API
           end
 
           validator.typenames.each do |typename|
+            api.logger.debug "Validator defined: #{typename}"
             validators[typename.to_s.downcase.to_sym] = validator
           end
         end
