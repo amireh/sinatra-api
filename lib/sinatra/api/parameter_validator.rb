@@ -33,10 +33,12 @@ module Sinatra::API
 
       private
 
-      def run_validators!(key, value, definition)
+      def run_validators!(key, hash, definition)
+        value = hash[key]
         typename = definition[:type]
         validator = definition[:validator]
         validator ||= self.validators[typename]
+        definition[:coerce] = true unless definition.has_key?(:coerce)
 
         if validator
           # Backwards compatibility:
@@ -54,6 +56,11 @@ module Sinatra::API
 
           if rc.is_a?(String)
             self.api.instance.halt 400, { :"#{key}" => rc }
+          end
+
+          # coerce the value, if viable
+          if validator.respond_to?(:coerce) && definition[:coerce].present?
+            hash[key] = validator.coerce(value, definition)
           end
         end
       end

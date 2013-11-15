@@ -25,8 +25,6 @@ module Sinatra::API
   #
   # TODO: accept nested parameters
   module Parameters
-    attr_accessor :api_parameter_records
-
     # Define the required API arguments map. Any item defined
     # not found in the supplied parameters of the API call will
     # result in a 400 RC with a proper message marking the missing
@@ -70,6 +68,8 @@ module Sinatra::API
     #
     # @see #api_required!
     def api_optional!(args, h = params)
+      args = api_parameters_to_hash(args) if args.is_a?(Array)
+
       args.each_pair { |name, cnd|
         if cnd.is_a?(Hash)
           api_optional!(cnd, h[name])
@@ -159,7 +159,10 @@ module Sinatra::API
     end
 
     def api_clear!()
-      @api = { required: {}, optional: {} }
+      @api = {
+        required: {}.with_indifferent_access,
+        optional: {}.with_indifferent_access
+      }.with_indifferent_access
     end
     alias_method :api_reset!, :api_clear!
 
@@ -180,7 +183,7 @@ module Sinatra::API
           halt 400, "Missing required parameter :#{name}"
         end
       else
-        Sinatra::API.trigger :parameter_parsed, name, h[name], options
+        Sinatra::API.trigger :parameter_parsed, name, h, options
 
         # if cnd.respond_to?(:call)
         #   errmsg = cnd.call(h[name])

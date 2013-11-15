@@ -26,7 +26,7 @@ module RSpec
           @keywords = @keywords.first.split(/\s/)
         end
 
-        @keywords = Regexp.new(@keywords.join('.*'))
+        @keywords = Regexp.new(@keywords.join('.*'), 'i')
 
         matched = false
         api_rc.messages.each { |m|

@@ -1,11 +1,11 @@
 module Sinatra::API
   class Config
     attr_accessor :with_errors
-    attr_accessor :with_parameter_validations
+    attr_accessor :verbose
 
     Defaults = {
       with_errors: true,
-      with_parameter_validations: true
+      verbose: false
     }
 
     def initialize(options = {})

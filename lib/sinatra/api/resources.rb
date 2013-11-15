@@ -73,7 +73,8 @@ module Sinatra::API
       else;                 container.send("#{r.to_plural}")
       end
 
-      puts "locating resource #{r} with id #{resource_id} from #{collection} [#{container}]"
+      Sinatra::API.logger.debug "locating resource #{r} with id #{resource_id} " +
+        "from #{collection} [#{container}]"
 
       resource = collection.get(resource_id)
 

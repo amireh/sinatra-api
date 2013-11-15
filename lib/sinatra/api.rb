@@ -36,6 +36,8 @@ require 'sinatra/api/resources'
 require 'sinatra/api/parameters'
 require 'sinatra/api/parameter_validator'
 require 'sinatra/api/parameter_validators/string_validator'
+require 'sinatra/api/parameter_validators/integer_validator'
+require 'sinatra/api/parameter_validators/float_validator'
 
 module Sinatra
   module API
@@ -77,6 +79,22 @@ module Sinatra
       def configure(options = {})
         self.config = Config.new(options)
       end
+
+      def process!(params, request)
+        request.body.rewind
+        raw_json = request.body.read.to_s || ''
+
+        unless raw_json.empty?
+          begin
+            params.merge!(parse_json(raw_json))
+          rescue ::JSON::ParserError => e
+            logger.warn e.message
+            logger.warn e.backtrace
+
+            instance.halt 400, "Malformed JSON content"
+          end
+        end
+      end
     end
 
     ResourcePrefix = '::'
@@ -85,36 +103,24 @@ module Sinatra
       api = self
       self.app = app
       self.logger = ActiveSupport::Logger.new(STDOUT)
-
+      self.logger.level = 100
       app.helpers Helpers, Parameters, Resources
 
-      on :with_parameter_validations_setting do |setting|
-        ParameterValidator.install(Sinatra::API) if setting
-      end
+      ParameterValidator.install(api)
 
       on :with_errors_setting do |setting|
         app.helpers ErrorHandler if setting
+      end
+
+      on :verbose_setting do |setting|
+        logger.level = setting ? 0 : 100
       end
 
       app.before do
         api.instance = self
         api.trigger :request, self
 
-        if api_call?
-          request.body.rewind
-          raw_json = request.body.read.to_s || ''
-
-          unless raw_json.empty?
-            begin
-              params.merge!(api.parse_json(raw_json))
-            rescue ::JSON::ParserError => e
-              logger.warn e.message
-              logger.warn e.backtrace
-
-              halt 400, "Malformed JSON content"
-            end
-          end
-        end
+        api.process!(params, request) if api_call?
       end
     end
   end

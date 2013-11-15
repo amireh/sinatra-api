@@ -15,6 +15,20 @@ describe Sinatra::API::Parameters do
         last_response.body.should match(/Missing required parameter :id/)
       end
 
+      it 'should define required parameters using list style' do
+        app.post '/' do
+          api_required!([ :id, :name ])
+        end
+
+        post '/'
+        last_response.status.should == 400
+        last_response.body.should match(/missing required parameter :id/i)
+
+        post '/', { id: 10 }.to_json
+        last_response.status.should == 400
+        last_response.body.should match(/missing required parameter :name/i)
+      end
+
       it 'should define a single required parameter' do
         app.get '/' do
           api_parameter! :id, required: true
@@ -46,14 +60,23 @@ describe Sinatra::API::Parameters do
         get '/'
         last_response.status.should == 200
       end
+
+      it 'should define optional parameters using list style' do
+        app.post '/' do
+          api_optional! [ :id, :name ]
+          api_params.to_json
+        end
+
+        post '/', { id: 5, name: 'test' }.to_json
+        last_response.status.should == 200
+        last_response.body.should == { id: 5, name: 'test' }.to_json
+      end
     end
   end
 
   it "should reject a request missing a required parameter" do
     app.get '/' do
-      api_required!({
-        id: nil
-      })
+      api_required! [ :id ]
     end
 
     get '/'
@@ -63,9 +86,7 @@ describe Sinatra::API::Parameters do
 
   it "should accept a request satisfying required parameters" do
     app.get '/' do
-      api_required!({
-        id: nil
-      })
+      api_required! [ :id ]
     end
 
     get '/', { id: 5 }
@@ -74,12 +95,8 @@ describe Sinatra::API::Parameters do
 
   it "should accept a request not satisfying optional parameters" do
     app.get '/' do
-      api_required!({
-        id: nil
-      })
-      api_optional!({
-        name: nil
-      })
+      api_required! [ :id ]
+      api_optional! [ :name ]
     end
 
     get '/', { id: 5 }
@@ -124,17 +141,4 @@ describe Sinatra::API::Parameters do
     }.to_json
   end
 
-  it "should locate a resource" do
-    app.get '/items/:item_id', requires: [ :item ] do
-      @item.to_json
-    end
-
-    get '/items/1'
-    last_response.status.should == 200
-    last_response.body.should == {}.to_json
-
-    get '/items/2'
-    last_response.status.should == 404
-    last_response.body.should match /No such resource/
-  end
 end
