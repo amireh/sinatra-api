@@ -17,7 +17,7 @@ module Sinatra
         return if key.to_s == resource_alias
 
         self.resource_aliases[key] << resource_alias
-        logger.debug "API resource #{original} is now aliased as #{resource_alias}"
+        # logger.debug "API resource #{original} is now aliased as #{resource_alias}"
       end
 
       def aliases_for(resource)

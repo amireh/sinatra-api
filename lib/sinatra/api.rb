@@ -29,9 +29,12 @@ require 'active_support/core_ext/string'
 require 'sinatra/api/version'
 require 'sinatra/api/callbacks'
 require 'sinatra/api/helpers'
+require 'sinatra/api/error_handler'
 require 'sinatra/api/resource_aliases'
 require 'sinatra/api/resources'
 require 'sinatra/api/parameters'
+require 'sinatra/api/parameter_validator'
+require 'sinatra/api/parameter_validators/string_validator'
 
 module Sinatra
   module API
@@ -64,12 +67,15 @@ module Sinatra
     ResourcePrefix = '::'
 
     def self.registered(app)
-      base = self
+      api = self
       self.logger = ActiveSupport::Logger.new(STDOUT)
 
-      app.helpers Helpers, Parameters, Resources
+      ParameterValidator.register(api)
+      StringValidator.new
+
+      app.helpers Helpers, Parameters, Resources, ErrorHandler
       app.before do
-        base.instance = self
+        api.instance = self
 
         @api = { required: {}, optional: {} }
         @parent_resource = nil
@@ -80,7 +86,7 @@ module Sinatra
 
           unless raw_json.empty?
             begin
-              params.merge!(base.parse_json(raw_json))
+              params.merge!(api.parse_json(raw_json))
             rescue ::JSON::ParserError => e
               logger.warn e.message
               logger.warn e.backtrace

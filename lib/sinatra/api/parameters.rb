@@ -25,6 +25,8 @@ module Sinatra::API
   #
   # TODO: accept nested parameters
   module Parameters
+    attr_accessor :api_parameter_records
+
     # Define the required API arguments map. Any item defined
     # not found in the supplied parameters of the API call will
     # result in a 400 RC with a proper message marking the missing
@@ -51,13 +53,15 @@ module Sinatra::API
     #   The supplied value passed to validation blocks is not pre-processed,
     #   so you must make sure that you check for nils or bad values in validator blocks!
     def api_required!(args, h = params)
+      args = api_parameters_to_hash(args) if args.is_a?(Array)
+
       args.each_pair do |name, cnd|
         if cnd.is_a?(Hash)
           api_required!(cnd, h[name])
           next
         end
 
-        parse_api_argument(h, name, cnd, :required)
+        parse_api_parameter(name, cnd, :required, h)
       end
     end
 
@@ -72,20 +76,25 @@ module Sinatra::API
           next
         end
 
-        parse_api_argument(h, name, cnd, :optional)
+        parse_api_parameter(name, cnd, :optional, h)
       }
+    end
+
+    def api_parameter!(id, options = {}, hash = params)
+      parameter_type = options[:required] ? :required : :optional
+      parameter_validator = options[:validator]
+
+      parse_api_parameter(id, parameter_validator, parameter_type, hash, options)
     end
 
     # Consumes supplied parameters with the given keys from the API
     # parameter map, and yields the consumed values for processing by
     # the supplied block (if any).
     #
-    # This is useful if:
-    #  1. a certain parameter does not correspond to a model attribute
-    #     and needs to be renamed, or is used in a validation context
-    #  2. the data needs special treatment
-    #  3. the data needs to be (re)formatted
+    # This is useful when a certain parameter does not correspond to a model
+    # attribute and needs to be renamed, or is used only in a validation context.
     #
+    # Use #api_transform! if you only need to convert the value or process it.
     def api_consume!(keys)
       out  = nil
 
@@ -105,23 +114,36 @@ module Sinatra::API
       out
     end
 
+    # Transform the value for the given parameter in-place. Useful for
+    # post-processing or converting raw values.
+    #
+    # @param [String, Symbol] key
+    #   The key of the parameter defined earlier.
+    #
+    # @param [#call] handler
+    #   A callable construct that will receive the original value and should
+    #   return the transformed one.
     def api_transform!(key, &handler)
-      if val = @api[:required][key.to_sym]
-        @api[:required][key.to_sym] = yield(val) if block_given?
+      key = key.to_sym
+
+      if val = @api[:required][key]
+        @api[:required][key] = yield(val) if block_given?
       end
 
-      if val = @api[:optional][key.to_sym]
-        @api[:optional][key.to_sym] = yield(val) if block_given?
+      if val = @api[:optional][key]
+        @api[:optional][key] = yield(val) if block_given?
       end
     end
 
     def api_has_param?(key)
       @api[:optional].has_key?(key)
     end
+    alias_method :has_api_parameter?, :api_has_param?
 
     def api_param(key)
       @api[:optional][key.to_sym] || @api[:required][key.to_sym]
     end
+    alias_method :api_parameter, :api_param
 
     # Returns a Hash of the *supplied* request parameters. Rejects
     # any parameter that was not defined in the REQUIRED or OPTIONAL
@@ -142,11 +164,13 @@ module Sinatra::API
 
     private
 
-    def parse_api_argument(h = params, name, cnd, type)
-      cnd ||= lambda { |*_| true }
+    def parse_api_parameter(name, cnd, type, h = params, options = {})
+      # cnd ||= lambda { |*_| true }
       name = name.to_s
 
-      unless [:required, :optional].include?(type)
+      options[:validator] ||= cnd
+
+      unless [ :required, :optional ].include?(type)
         raise ArgumentError, 'API Argument type must be either :required or :optional'
       end
 
@@ -155,13 +179,21 @@ module Sinatra::API
           halt 400, "Missing required parameter :#{name}"
         end
       else
-        if cnd.respond_to?(:call)
-          errmsg = cnd.call(h[name])
-          halt 400, { :"#{name}" => errmsg } if errmsg && errmsg.is_a?(String)
-        end
+        Sinatra::API.trigger :parameter_parsed, name, h[name], options
+
+        # if cnd.respond_to?(:call)
+        #   errmsg = cnd.call(h[name])
+        #   halt 400, { :"#{name}" => errmsg } if errmsg && errmsg.is_a?(String)
+        # end
 
         @api[type][name.to_sym] = h[name]
       end
+    end
+
+    def api_parameters_to_hash(args)
+      converted = {}
+      args.each { |name| converted[name] = nil }
+      converted
     end
   end
 end

@@ -1,5 +1,53 @@
-describe Sinatra::API::Helpers do
+describe Sinatra::API::Parameters do
   include_examples 'integration specs'
+
+  context 'defining parameters' do
+    context 'required parameters' do
+      it 'should define a required parameter using hash style' do
+        app.get '/' do
+          api_required!({
+            id: nil
+          })
+        end
+
+        get '/'
+        last_response.status.should == 400
+        last_response.body.should match(/Missing required parameter :id/)
+      end
+
+      it 'should define a single required parameter' do
+        app.get '/' do
+          api_parameter! :id, required: true
+        end
+
+        get '/'
+        last_response.status.should == 400
+        last_response.body.should match(/Missing required parameter :id/)
+      end
+    end
+
+    context 'optional parameters' do
+      it 'should define an optional parameter using hash style' do
+        app.get '/' do
+          api_optional!({
+            id: nil
+          })
+        end
+
+        get '/'
+        last_response.status.should == 200
+      end
+
+      it 'should define a single required parameter' do
+        app.get '/' do
+          api_parameter! :id
+        end
+
+        get '/'
+        last_response.status.should == 200
+      end
+    end
+  end
 
   it "should reject a request missing a required parameter" do
     app.get '/' do

@@ -32,8 +32,9 @@ module Sinatra::API
     # we attempt to locate and expose it to the route.
     #
     # A 404 is raised if:
-    #   1. the scope is missing (@space for folder, @space or @folder for page)
-    #   2. the resource couldn't be identified in its scope (@space or @folder)
+    #
+    #   1. the scope is missing
+    #   2. the resource couldn't be found in its scope
     #
     # If the resources were located, they're accessible using @folder or @page.
     #
@@ -41,6 +42,7 @@ module Sinatra::API
     # a resource.
     #
     # @example using :requires to reject a request with an invalid @page
+    #
     #   get '/folders/:folder_id/pages/:page_id', :requires => [ :page ] do
     #     @page.show    # page is good
     #     @folder.show  # so is its folder

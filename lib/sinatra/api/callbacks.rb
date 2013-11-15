@@ -21,6 +21,7 @@
 
 module Sinatra
   module API
+    # An event pub/sub interface.
     module Callbacks
       attr_accessor :callbacks
 
@@ -28,10 +29,38 @@ module Sinatra
         base.callbacks = {}
       end
 
+      # Add a callback to a given event.
+      #
+      # @example Listening to :resource_located events
+      #
+      #     Sinatra::API.on :resource_located do |resource, name|
+      #       if resource.is_a?(Monkey)
+      #         resource.eat_banana
+      #       end
+      #     end
+      #
+      # @example A callback with an instance method
+      #
+      #   class Monkey
+      #     def initialize
+      #       # This means that the monkey will eat a banana everytime a resource
+      #       # is located.
+      #       Sinatra::API.on :resource_located, &method(:eat_banana)
+      #     end
+      #
+      #     def eat_banana(*args)
+      #     end
+      #   end
       def on(event, &callback)
         (self.callbacks[event.to_sym] ||= []) << callback
       end
 
+      # Broadcast an event to subscribed callbacks.
+      #
+      # @example Triggering an event with an argument
+      #
+      #     Sinatra::API.trigger :special_event, 'Special Argument'
+      #
       def trigger(event, *args)
         callbacks = self.callbacks[event.to_sym] || []
         callbacks.each do |callback|
