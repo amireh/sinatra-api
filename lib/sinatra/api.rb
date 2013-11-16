@@ -86,7 +86,7 @@ module Sinatra
 
         unless raw_json.empty?
           begin
-            params.merge!(parse_json(raw_json))
+            params.merge!(self.parse_json(raw_json))
           rescue ::JSON::ParserError => e
             logger.warn e.message
             logger.warn e.backtrace
