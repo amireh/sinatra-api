@@ -37,7 +37,8 @@ module Sinatra::API
         value = hash[key]
         typename = definition[:type]
         validator = definition[:validator]
-        validator ||= self.validators[typename]
+        validator = validators[validator] if validator.is_a?(Symbol)
+        validator ||= validators[typename]
         definition[:coerce] = true unless definition.has_key?(:coerce)
 
         if validator
@@ -51,7 +52,7 @@ module Sinatra::API
             rc = validator.validate(value, definition)
           # ?
           else
-            raise 'Invalid ParameterValidator, must respond to #call or #validate'
+            raise "Invalid ParameterValidator #{validator.class}, must respond to #call or #validate"
           end
 
           if rc.is_a?(String)

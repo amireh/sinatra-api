@@ -15,6 +15,44 @@ describe Sinatra::API::Parameters do
         last_response.body.should match(/Missing required parameter :id/)
       end
 
+      it 'should define a required group parameter' do
+        pending 'nested parameter groups'
+
+        app.post '/' do
+          api_required!({
+            id: nil,
+            project: {
+              name: nil
+            }
+          })
+
+          api_params.to_json
+        end
+
+        rc = api_call post '/', { id: 123, project: { name: 'adooga' } }.to_json
+        rc.should succeed
+        rc.body.should == {
+          id: 123,
+          project: {
+            name: 'adooga'
+          }
+        }.with_indifferent_access
+      end
+
+      it 'should reject when missing a required group parameter' do
+        app.post '/' do
+          api_required!({
+            id: nil,
+            project: {
+              name: nil
+            }
+          })
+        end
+
+        rc = api_call post '/', { id: 123 }.to_json
+        rc.should fail(400, 'missing name')
+      end
+
       it 'should define required parameters using list style' do
         app.post '/' do
           api_required!([ :id, :name ])
@@ -139,6 +177,17 @@ describe Sinatra::API::Parameters do
     last_response.body.should == {
       name: 'foobar'
     }.to_json
+  end
+
+  it 'should conflict with route parameters' do
+    app.post '/chickens/:chicken_id' do
+      api_parameter! :chicken_id, type: :string
+      api_params.to_json
+    end
+
+    rc = api_call post '/chickens/12', { chicken_id: 'keeek' }.to_json
+    rc.should succeed(200)
+    rc.body[:chicken_id].should == '12'
   end
 
 end

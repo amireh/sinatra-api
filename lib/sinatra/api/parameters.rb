@@ -178,7 +178,7 @@ module Sinatra::API
         raise ArgumentError, 'API Argument type must be either :required or :optional'
       end
 
-      if !h.has_key?(name)
+      if !h || !h.has_key?(name)
         if type == :required
           halt 400, "Missing required parameter :#{name}"
         end
