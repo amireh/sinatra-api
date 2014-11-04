@@ -23,8 +23,8 @@ module Sinatra::API
   module Helpers
     # Determine if this is a JSON API request.
     def api_call?
-      (request.accept || '').to_s.include?('json') ||
-      (request.content_type||'').to_s.include?('json')
+      (request.content_type).to_s.include?('json') ||
+      (request.accept).to_s.include?('json')
     end
   end
 end
